@@ -21,7 +21,8 @@ def takeInput(filename="bisecting.txt", delimiter="\t"):
 class Cluster:
     def __init__(self, point_list, centroid_tuple=(0,0)):
         self.color = np.random.uniform(5, 100)
-        self.point_list = point_list
+        self.point_list = []
+        self.point_list.extend(point_list)
         if (len(point_list)==0):
             self.centroid = centroid_tuple
         else:        
@@ -41,7 +42,7 @@ class Cluster:
 
     def SSE(self):
         sse = 0
-        for tup in point_list:
+        for tup in self.point_list:
             x = tup[0]
             y = tup[1]
             sse += (self.centroid[0] - tup[0])**2 + (self.centroid[1] - tup[1])**2 
@@ -51,6 +52,44 @@ class Cluster:
         return ((self.centroid[0] - point[0])**2 + (self.centroid[1] - point[1])**2)
 
 import numpy as np
+
+
+def bisectingKmeans(point_list, k):
+    output_clusters = []
+    c = Cluster(point_list)
+    list_clusters = [c]
+    while(len(list_clusters) < k):
+        # select a cluster from the list of cluster
+        #picked_cluster_i = np.random.randint(0, len(list_clusters))
+        sses = []
+        for cl in list_clusters:
+            sses.append(cl.SSE())
+        picked_cluster_i = np.argmax(sses)    
+
+        pick = list_clusters[picked_cluster_i]
+        min_sum_sse = float('inf')  
+        for i in range(10):
+            clusters = kmeans(pick.point_list, 2)
+            sum_sse = clusters[0].SSE() + clusters[1].SSE()
+            if sum_sse < min_sum_sse:
+                min_sum_sse = sum_sse
+                best_clusters = []
+                best_clusters.extend(clusters)
+        list_clusters[picked_cluster_i] = best_clusters[0]
+        list_clusters.append(best_clusters[1])
+
+        cluster_colors = cm.rainbow(np.linspace(0,1,len(list_clusters)))        
+        for i in range(len(list_clusters)):
+            list_clusters[i].color = cluster_colors[i]
+
+        for i in range(len(list_clusters)):
+            nppoints = np.asarray(list_clusters[i].point_list, dtype = float)
+            nplist = np.asarray(point_list , dtype='float')
+            plt.scatter(nppoints[0: , 0], nppoints[0: , 1], c=list_clusters[i].color)            
+            plt.plot(list_clusters[i].centroid[0],list_clusters[i].centroid[1], '+', mew=10, ms=25,c='black')
+            plt.plot(list_clusters[i].centroid[0],list_clusters[i].centroid[1], '+', mew=5, ms=20,c=list_clusters[i].color)
+        plt.show()
+             
 
 def kmeans(point_list, k):
     nplist = np.asarray(point_list , dtype='float')
@@ -68,13 +107,14 @@ def kmeans(point_list, k):
         rany = np.random.uniform(miny, maxy)
         centroids.append((ranx, rany))
     centroids =  np.asarray(centroids , dtype='float')
-    #plt.plot(centroids[0: , 0], centroids[0: , 1], '+', mew=5, ms=20, color='r' )
-
-    t = np.arange(len(xlist))
-    plt.scatter(xlist, ylist, c=t)
+    ####plt.scatter(xlist, ylist)
+    ####plt.plot(centroids[0: , 0], centroids[0: , 1], '+', mew=5, ms=20, color='r' )
+    ####plt.show()
+    #t = np.arange(len(xlist))
+    
     cluster_colors =(cm.rainbow(np.linspace(0,1,k)))
     #plt.plot(centroids[0: , 0], centroids[0: , 1], '+', mew=5, ms=20, c=cluster_colors )
-    plt.show()
+    #plt.show()
 
     # initial k clusters
     clusters = []
@@ -127,12 +167,13 @@ def kmeans(point_list, k):
     for i in range(len(xlist)):
         t[i] = clusters[label[i]].color
     #for i,tt in zip(range(k), t):
-    plt.scatter(xlist,ylist, c=t)
+    ####plt.scatter(xlist,ylist, c=t)
     #plt.scatter(xlist, ylist, cmap=t)
-    for i,cc in zip(range(k), cluster_colors):
-        plt.plot(centroids[i][0],centroids[i][1], '+', mew=10, ms=25,c='black')
-        plt.plot(centroids[i][0],centroids[i][1], '+', mew=5, ms=20,c=cc)
-    plt.show()
+     ####for i,cc in zip(range(k), cluster_colors):
+     ####    plt.plot(centroids[i][0],centroids[i][1], '+', mew=10, ms=25,c='black')
+     ####    plt.plot(centroids[i][0],centroids[i][1], '+', mew=5, ms=20,c=cc)
+     ####plt.show()
+    return clusters
     #print x, y
 #kmeans(l, 3)
 
@@ -161,7 +202,8 @@ def kmeans(point_list, k):
 if __name__ == '__main__':
     #dataset = takeInput("input.txt", " ")
     dataset = takeInput()
-    kmeans(dataset, 7)
+    #kmeans(dataset, 7)
+    bisectingKmeans(dataset, 7)
     '''
     nplist = np.asarray(dataset , dtype='float')
     xlist = nplist[0: , 0]
